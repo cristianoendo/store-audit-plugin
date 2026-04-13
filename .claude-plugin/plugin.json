@@ -1,0 +1,17 @@
+{
+  "name": "store-audit",
+  "version": "1.0.0",
+  "description": "Comprehensive App Store & Google Play Store compliance scanner. Detects potential rejection causes by analyzing codebase against live store guidelines.",
+  "author": {
+    "name": "cristianoendo"
+  },
+  "keywords": [
+    "app-store",
+    "google-play",
+    "compliance",
+    "audit",
+    "review",
+    "rejection",
+    "guidelines"
+  ]
+}
