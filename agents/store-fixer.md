@@ -110,6 +110,21 @@ These require context and judgment:
    - `npm run build` (full build)
    - `npx vitest run` (all tests pass)
 
+## Preferred tooling for App Store Connect interactions
+
+When you need to interact with App Store Connect (read submission state, attach a build, cancel a submission, post a Resolution Center reply, delete a promotional image, click "Reenviar para Revisão do app"), **prefer Playwright over Spaceship/Fastlane direct API calls** if a Playwright session is already authenticated. Reasons drawn from real failures:
+
+- The UI propagates faster than the API. `Build.all(version: "N")` can return empty for several minutes after a build is already "Concluído" in TestFlight; polling wastes time.
+- Several `/v1/*` endpoints have been deprecated. Notably `v1/resolutionCenterThreads` returns 404 — the only reliable way to read the rejection message is Playwright on the submission details page.
+- Build-attach swap, image deletion, and resubmit are 3–5 clicks each in the UI but multi-step API workflows where each call has its own gotchas.
+
+Use Spaceship/altool/Fastlane only for:
+- One-shot reads when no browser session exists (e.g. CI status checks).
+- `upload_to_app_store` / `pilot upload` — Fastlane is the canonical path for binary uploads.
+- Batch operations that would require 50+ UI clicks (rare).
+
+For a step-by-step Playwright resubmit procedure, follow `../skills/store-fix/references/resubmit-checklist.md`. For known API/tooling traps to avoid, read `../skills/store-fix/references/tooling-pitfalls.md`.
+
 ## Rules
 
 - Follow project conventions in CLAUDE.md (TypeScript strict, pt-BR UI text, @/ imports)
@@ -118,3 +133,4 @@ These require context and judgment:
 - Commit with conventional commit format: `fix: [description]`
 - If a fix is risky or ambiguous, document what you did and why
 - Do NOT touch code unrelated to the findings
+- Before claiming a build/upload is ready for resubmission, **verify** that the in-flight version's "Compilação" table shows the new build number, not the rejected one. Uploading does NOT auto-attach.
