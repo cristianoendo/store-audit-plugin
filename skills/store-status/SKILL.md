@@ -194,10 +194,18 @@ Present findings in this format:
 ### Step 6: Suggest Next Actions
 
 Based on the status:
-- **REJECTED**: "Use `/store-audit:store-fix` to analyze and fix the rejection issues."
+- **REJECTED** or **UNRESOLVED_ISSUES**: **Stop.** Do NOT draft fixes inside the status report. Tell the user: "App is rejected — invoke `/store-audit:store-fix` BEFORE doing anything else. The Reply button in the Resolution Center disappears once the submission state changes, so the response must be drafted first." If the user explicitly opts to continue inline (rare), still load `store-fix/SKILL.md` first to enforce the response-first ordering.
 - **WAITING_FOR_REVIEW**: "App is in queue. No action needed."
 - **READY_FOR_SALE / PUBLISHED**: "App is live. Use `/store-audit:store-audit` for proactive compliance check."
 - **DEVELOPER_REJECTED**: "You canceled the submission. Use `/store-audit:store-submit` when ready to resubmit."
+
+## Spaceship API gaps (real-world fallbacks)
+
+Some Connect endpoints have been deprecated or trail the UI. When the script fails or returns empty:
+
+- **`v1/resolutionCenterThreads` returns 404** — Spaceship's `fetch_resolution_center_threads` no longer works. To read the actual rejection message text, use Playwright on `/apps/{app_id}/distribution/reviewsubmissions/details/{submission_id}` and extract the message body. The submission ID can be obtained from `app.get_in_progress_review_submission(platform: "IOS").id`.
+- **`Build.all(version: "N")` returns empty for several minutes** even after upload completes — TestFlight UI surfaces the build first. To check if a freshly uploaded build is processed, prefer Playwright on `/teams/{team_id}/apps/{app_id}/testflight/ios` and look for the row marked "Concluído". Polling Spaceship `Build.all` every 60s wastes time when the UI already shows VALID.
+- **Build attachment to a version is NOT automatic** — `upload_to_app_store` adds the binary to the app, but the version's "Compilação" relationship still points to the previous build. Either call `Spaceship::ConnectAPI::AppStoreVersion#select_build(build_id:)` explicitly, or delegate the swap to Playwright (see `../store-fix/references/resubmit-checklist.md`).
 
 ## Error Handling
 
