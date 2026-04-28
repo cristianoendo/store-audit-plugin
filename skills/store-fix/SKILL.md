@@ -10,11 +10,24 @@ allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Task", "TodoWr
 
 Analyzes app store rejections, drafts a response to the review team, applies code/config fixes, and verifies everything before resubmission.
 
+## Pre-Flight (read first — non-negotiable order)
+
+If you arrive here from `/store-audit:store-status` with state=REJECTED **or** UNRESOLVED_ISSUES, do not skip ahead. Run these in order. Each step gates the next.
+
+- [ ] **0. Reply to Apple in Resolution Center** — draft the response, get user approval, then send. The "Reply" button disappears once the submission is canceled or replaced. (Step 1 of the Workflow below.)
+- [ ] **1. Branch off** — `git checkout -b fix/store-rejection-$(date +%Y-%m-%d)`. (Step 4.)
+- [ ] **2. Apply fixes** — auto + guided. (Step 5.)
+- [ ] **3. Verify build/test/audit** — including `grep "appl_\\|goog_" dist/assets/*.js` for SDK keys baked into the bundle when IAP is involved. (Step 6.)
+- [ ] **4. Build, upload, and SWAP the attached build** — delete old build from version, attach new build, save. Confirm the version's "Compilação" table shows the new build number, not the old one. See `references/resubmit-checklist.md`.
+- [ ] **5. Resubmit** — click "Atualizar revisão" → "Reenviar para Revisão do app". Confirm state == "Aguardando revisão".
+
+If a Playwright session is already authenticated for App Store Connect, **prefer Playwright over Spaceship/altool for steps 4 and 5** — UI propagates faster than the API and several `/v1/*` endpoints (e.g. `resolutionCenterThreads`) are deprecated. See `references/tooling-pitfalls.md`.
+
 ## CRITICAL RULE
 
-**Draft and send the response to the review team BEFORE canceling the submission or making code changes.** The "Reply" button in the Resolution Center disappears after canceling a submission. Always:
+**Draft and send the response to the review team BEFORE canceling the submission, swapping the build, or making code changes.** The "Reply" button in the Resolution Center disappears after the submission state changes. Always:
 
-1. Draft response → 2. User sends via Resolution Center → 3. Then fix code → 4. Then resubmit
+1. Draft response → 2. User sends via Resolution Center → 3. Then fix code → 4. Then swap build → 5. Then resubmit
 
 ## Workflow
 
@@ -34,7 +47,38 @@ Parse and extract:
 - Reviewer notes
 - Review device details (if mentioned)
 
-### Step 2: Map Rejection to Code
+### Step 2: Draft & Send Response — BEFORE Any Code Changes
+
+> ⚠️ **This is the gating step**, not Step 3. The Reply button in the Resolution Center disappears once the submission is canceled or replaced. Doing this AFTER fixes means the reviewer never sees the explanation.
+
+Use `references/response-templates.md` to draft a formal response:
+
+1. Select the appropriate template (Apple English, Apple Portuguese, Google)
+2. Fill in each guideline section with:
+   - The exact guideline number and category
+   - Root cause explanation (specific, honest)
+   - Description of the fix being applied
+3. Add proactive improvements section (if any)
+4. Add closing with build number reference
+
+Present the response to the user:
+
+```
+📋 Response draft for Resolution Center:
+
+---
+[Response text]
+---
+
+Please send this response via the Resolution Center BEFORE I start making code changes.
+The Reply button disappears after canceling the submission.
+
+Confirm when sent, and I'll proceed with the fixes.
+```
+
+**WAIT for user confirmation before proceeding.** If a Playwright session for App Store Connect is already authenticated, the agent may type the approved draft into the Reply dialog and click "Responder" on the user's behalf — but only after the user has approved the exact text.
+
+### Step 3: Map Rejection to Code
 
 For each guideline violation:
 
@@ -63,35 +107,6 @@ Present a fix plan:
 | # | Issue | Where | Action |
 |---|-------|-------|--------|
 ```
-
-### Step 3: Draft Response — BEFORE Any Code Changes
-
-Use `references/response-templates.md` to draft a formal response:
-
-1. Select the appropriate template (Apple English, Apple Portuguese, Google)
-2. Fill in each guideline section with:
-   - The exact guideline number and category
-   - Root cause explanation (specific, honest)
-   - Description of the fix being applied
-3. Add proactive improvements section (if any)
-4. Add closing with build number reference
-
-Present the response to the user:
-
-```
-📋 Response draft for Resolution Center:
-
----
-[Response text]
----
-
-Please send this response via the Resolution Center BEFORE I start making code changes.
-The Reply button disappears after canceling the submission.
-
-Confirm when sent, and I'll proceed with the fixes.
-```
-
-**WAIT for user confirmation before proceeding.**
 
 ### Step 4: Create Fix Branch
 
@@ -158,8 +173,13 @@ After all fixes are applied:
 4. **Unused permissions** — Immediate rejection (Guideline 1.1.6)
 5. **Privacy labels mismatch** — NSPrivacyTracking must match App Store Connect
 6. **Privacy labels** — Do NOT mark tracking if you're not tracking
+7. **IAP error in sandbox = bundle missing the SDK API key** — `import.meta.env.VITE_REVENUECAT_*_API_KEY` resolves to `""` at build time when the env-var isn't set; RevenueCat silently fails to configure. Always `grep "appl_\\|goog_" dist/assets/*.js` after `vite build` and before `cap sync`.
+8. **Build swap is a manual step** — uploading a new build to App Store Connect does NOT auto-attach it to the in-flight version. You must delete the old build from the version's "Compilação" table and add the new one before resubmitting. (See `references/resubmit-checklist.md`.)
+9. **Spaceship API trails the UI** — `Build.all(version: "N")` can return empty even when the build is already "Concluído" in TestFlight. Trust Playwright on the TestFlight UI page over polling the API.
 
 ## References
 
 - **`references/fix-playbook.md`** — Step-by-step playbook for common rejection fixes
 - **`references/response-templates.md`** — Response templates for review teams
+- **`references/resubmit-checklist.md`** — Step-by-step Playwright runbook for resubmitting a rejected iOS app (build swap + reply confirm + resubmit)
+- **`references/tooling-pitfalls.md`** — Concrete technical pitfalls (Spaceship lag, stdout buffering, deprecated endpoints, env-var bundling)
