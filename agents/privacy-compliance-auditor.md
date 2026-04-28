@@ -77,35 +77,65 @@ You will receive:
   - Apple REQUIRES account deletion if account creation exists (guideline 5.1.1(v))
 - **Right to export**: Search for data export functionality
 - **Data minimization**: Check if only necessary data is collected
-- **Finding**: Account creation without deletion option → CRITICO (Apple). No consent mechanism → ALTO.
+- **LGPD-specific (Brazilian apps)**:
+  - **Art. 11** — Sensitive data (health, biometric, sexual orientation, religion, political) requires SPECIFIC and HIGHLIGHTED consent, not just acceptance of generic privacy policy
+  - **Art. 33** — International data transfer requires disclosure of countries where data is processed (Supabase, Vercel, Stripe regions)
+  - **Art. 14** — Children under 12 require parental consent
+- **Sub-processor disclosure**: Verify privacy policy lists all third-party data processors:
+  - Hosting/database (Supabase, Firebase, AWS, Vercel)
+  - Payment processors (Stripe, RevenueCat, Apple, Google)
+  - Analytics, crash reporting, ads
+- **Multi-language policy**: If app supports multiple languages, verify privacy policy is translated for ALL supported locales (not just primary language)
+- **Findings**:
+  - Account creation without deletion option → CRITICO (Apple)
+  - No consent mechanism → ALTO (general) or CRITICO (if app handles sensitive data per LGPD Art. 11)
+  - Missing sub-processor disclosure → ALTO
+  - Privacy policy not translated for supported locales → MEDIO
 
-### 6. COPPA (Children's Privacy)
+### 6. COPPA (Children's Privacy) & Age Gates
 
 - **Check if app targets children**:
   - Search store metadata for kids/children/family category
   - Check age rating declarations
-  - Search for age gate/verification UI
+  - Search for age gate/verification UI (date of birth field, age confirmation checkbox)
 - **If targeting children**:
   - No behavioral advertising
   - No third-party analytics without consent
   - Parental consent mechanism required
   - No social features without safeguards
-- **Finding**: Kids app with ad tracking → CRITICO
+- **Age gate also required for**:
+  - Apps collecting health data that may be used by adolescents (period trackers, fertility, mental health) — even if not officially "kids" apps
+  - Apps with social features open to minors
+  - Apps in regions where age verification is regulated
+- **Findings**:
+  - Kids app with ad tracking → CRITICO
+  - Health data app without age gate → ALTO
+  - No age gate at all in onboarding → MEDIO
 
 ### 7. Health Data (if applicable)
 
-- **HealthKit (iOS)**:
-  - `com.apple.developer.healthkit` entitlement must exist
+Health data has two distinct categories — do NOT conflate them:
+
+- **HealthKit-integrated apps (iOS)**:
+  - `com.apple.developer.healthkit` entitlement REQUIRED
   - `NSHealthShareUsageDescription` and `NSHealthUpdateUsageDescription` must be descriptive
   - Health data must not be stored in iCloud or shared without explicit consent
-  - App must have a clear health-related purpose
+- **User-input health data (no HealthKit)**:
+  - PrivacyInfo.xcprivacy SHOULD still declare `NSPrivacyCollectedDataTypeHealthData` (Apple's category includes menstrual, fertility, pregnancy, mental health input)
+  - HealthKit entitlement NOT required, usage descriptions NOT required
+  - But: privacy policy must clearly state how health data is collected and stored
 - **Google Fit / Health Connect (Android)**:
   - Appropriate permissions declared
   - Health data policy compliance
 - **General**:
   - Medical disclaimers present (if providing health advice)
   - No diagnostic claims without regulatory approval
-- **Finding**: Missing health usage descriptions → CRITICO. Missing medical disclaimer → ALTO.
+  - Verify claims in PrivacyInfo.xcprivacy match what app actually collects (over-declaring is safer than under-declaring)
+- **Findings**:
+  - HealthKit APIs used without entitlement/usage descriptions → CRITICO
+  - User-input health app without HealthData category in privacy manifest → ALTO
+  - Privacy manifest declares HealthKit data but app does not implement HealthKit → MEDIO (clarify scope or remove)
+  - Missing medical disclaimer → ALTO
 
 ### 8. Third-Party SDKs Data Collection
 

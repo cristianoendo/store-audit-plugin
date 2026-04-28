@@ -2,7 +2,7 @@
 description: Scan your app/SaaS codebase for App Store and Google Play Store rejection causes. Fetches live guidelines and generates a severity-ranked report with auto-fixes.
 argument-hint: "[ios|android|all]"
 allowed-tools:
-  - Agent
+  - Task
   - TodoWrite
   - Read
   - Bash

@@ -1,10 +1,8 @@
 ---
 name: store-audit
 description: "Use when the user mentions app store submission, app review, app rejection, store compliance, Play Store policy, App Store guidelines, store rejection, review rejection, app submission, submit to store, publish app, or wants to verify their app before submitting to Apple App Store or Google Play Store."
-version: 1.0.0
 allowed-tools:
-  - Agent
-  - TodoWrite
+  - SlashCommand
   - Read
 ---
 
