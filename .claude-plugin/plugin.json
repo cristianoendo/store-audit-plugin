@@ -1,7 +1,7 @@
 {
   "name": "store-audit",
-  "version": "1.0.0",
-  "description": "Comprehensive App Store & Google Play Store compliance scanner. Detects potential rejection causes by analyzing codebase against live store guidelines.",
+  "version": "2.0.0",
+  "description": "Comprehensive App Store & Google Play compliance toolkit. Pre-submission audit with 6 specialized auditors + live guidelines fetch + auto-fixes, plus full rejection lifecycle: status check via store APIs, response drafting, code fixes, and Fastlane submission.",
   "author": {
     "name": "cristianoendo"
   },
@@ -12,6 +12,13 @@
     "audit",
     "review",
     "rejection",
-    "guidelines"
+    "guidelines",
+    "fastlane",
+    "submission",
+    "ios",
+    "android",
+    "in-app-purchase",
+    "privacy",
+    "capacitor"
   ]
 }
